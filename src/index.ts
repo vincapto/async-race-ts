@@ -1,4 +1,3 @@
-import { Winner } from './index';
 import {
   createCarContainer,
   createCarList,
@@ -14,6 +13,8 @@ import {
   getAllCars,
   getAllWinners,
   getCar,
+  getCarByID,
+  getCarsByPage,
   getPageCar,
   saveWinner,
   switchCar,
@@ -24,9 +25,11 @@ import { checkMaxPage, getCarPerPage, getPageCount } from './pagination';
 import './styles/index.scss';
 import { getWinner } from './winner';
 
+const body = <Element>document.querySelector('body');
+body.innerHTML = '<div class="container"></div>'
 const container = <Element>document.querySelector('.container');
 
-function getCarTime({ distance, velocity }: { distance: number; velocity: number) {
+function getCarTime({ distance, velocity }: { distance: number; velocity: number}) {
   return distance / velocity;
 }
 
@@ -40,7 +43,8 @@ export type Winner = { id: string | number; wins: number; time: string;};
 let currentPage = 1;
 let currentPageWinner = 1;
 let  garage  = await getAllCars();
-let {data: dataAllWinnerList} =await getAllWinners()
+console.log(garage)
+let {data: dataAllWinnerList} = await getAllWinners()
 let garageLength = garage.length;
 let winnerLength = dataAllWinnerList.length
 let maxPageCount = getPageCount(garageLength).length;
@@ -59,19 +63,14 @@ function reduceWinner(list: Winner[]) {
 
 async function getCarPageList(page: number, garage: Car[]) {
   console.log(garage);
-  const idList =getCarPerPage(page, garageLength, garage);
-  const carPage = await Promise.all(
-    await getPageCar(idList)
-  );
-//   const data = await Promise.all( carPage.map(async (a) =>{ 
-//     const {data} = await a.json()
-//     return data as Car;
-//     }))
-  console.table(carPage)
-  return carPage;
+  const idList =await getCarsByPage(page);
+  console.log(idList)
+  return idList;
 }
 
-const list = await getCarPageList(1, garage) as Car[];
+const list = await getCarsByPage(1) as Car[];
+
+console.log('--', list)
 container.innerHTML = createCarContainer(list);
 
 
@@ -103,14 +102,13 @@ carListElement.addEventListener('click', (event) => {
   if (event.target !== carListElement) {
     setButtonListener(event);
   }
-});
+}); 
 
 
 async function showWinnerList(page=1, sort='id', order='ASC') {
   const {list, count} = await getWinner(page, sort, order);
-  
-  winnerList.innerHTML = createWinnerList(list);
-  winnerElementLength.textContent = count
+  winnerList.innerHTML = list ? createWinnerList(list) : '';
+  winnerElementLength.textContent = count.toString();
 }
 
 function toggleVisible(isCar= false) {
@@ -156,7 +154,7 @@ async function updateCarValue(id: string) {
   const color = <HTMLInputElement>document.querySelector('.input-update__color');
   const nameValue = name.value;
   const colorValue = color.value;
-  console.log('PUT')
+  console.log('PUT', colorValue, nameValue, id)
   garage = await getAllCars();
   await updateCar({ id, name:nameValue, color:colorValue });
   const list = await getCarPageList(currentPage, garage);
@@ -211,7 +209,8 @@ async function setButtonListener(event: Event) {
       // console.log('STOP ', stopTime);
       break;
     case classList.contains('car__update'):
-      const car = await getCar(id);
+        console.log(id)
+      const car = await getCarByID(id);
       setInputValue(car);
 
       break;
@@ -320,28 +319,18 @@ btnRace.addEventListener('click', async (event) => {
   }
 });
 
-// paginationCar.addEventListener('click', async (event) => {
-//   // if (event.target !== pagination) {
-//   //   console.log(currentPageElement);
-//   //   currentPageElement.classList.remove('pagination--active');
-//   //   currentPage = event.target.dataset.page;
-//   //   currentPageElement = event.target;
-//   //   event.target.classList.add('pagination--active');
-//   //   const list = await getCarPageList(currentPage, garage);
-//   //   carListElement.innerHTML = createCarList(list);
-//   // }
-// });
 
 async function startRace(carElement: CarElement[]) {
   const idList = carElement.map((a) => a.dataset.carId);
-
+    console.log(carElement, idList)
   const promiseListSwitch = idList.map((id) => {
     return switchCar(+id, true);
   });
   const promiseListAllSwitch = await Promise.all(promiseListSwitch);
   const carTimeList = promiseListAllSwitch.map((a, key) => {
+    console.log(a)
     return {
-      time: getCarTime(a.data),
+      time: getCarTime(a),
       id: idList[key],
       car: carElement[key],
       name: carElement[key].dataset.name,
@@ -521,7 +510,7 @@ btnBackWinner.addEventListener('click', async (event) => {
 
 btnForward.addEventListener('click', async (event) => {
   const movePage = currentPage + 1 <=  maxPageCount? currentPage +1:maxPageCount;
-  console.log('!!!',currentPage, movePage)
+  console.log('!!!',currentPage, movePage, maxPageCount)
   if(movePage !== currentPage){
     
     currentPage = movePage;
