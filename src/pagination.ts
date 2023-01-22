@@ -11,7 +11,7 @@ export function checkMaxPage(count=1) {
   return Math.ceil(count/PER_PAGE_WINNER);
 }
 
-export function getCarPerPage(page = 1, count = 4, fetchList: Array<Record<string, string>>) {
+export function getCarPerPage(page = 1, count = 4, fetchList: Array<Record<string, string | number>>) {
   const max = page * PER_PAGE;
   const min = max - PER_PAGE;
   const length = max > count ? count % PER_PAGE : PER_PAGE;

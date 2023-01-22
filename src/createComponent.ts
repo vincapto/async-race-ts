@@ -1,10 +1,11 @@
+import { Car } from './index';
 import { list } from 'postcss';
 
-export function createCarList(list : Array<Record<string, string>>) {
+export function createCarList(list : Car[]) {
   return list.map((a) => createCar(a)).join('');
 }
 
-export function createCar({ name, color, id, model } : Record<string, string>) {
+export function createCar({ name, color, id } : Car) {
   return `
   <div class='car__track'>
     <div class='car__control'>
@@ -16,7 +17,7 @@ export function createCar({ name, color, id, model } : Record<string, string>) {
       <button data-id='${id}' class='btn car__update'>Select</button>
     </div>
     <div class='car__item'>
-      <div class='car' data-condition='ready' data-name=${name} data-model=${model} data-color=${color} data-car-id=${id}>
+      <div class='car' data-condition='ready' data-name=${name} data-model=${''} data-color=${color} data-car-id=${id}>
         <div class='car__name'>${name}</div>
         <div class='car__icon' style='background-color:${color}'>${id}</div>
       </div>
@@ -54,7 +55,7 @@ export function createWinnerItem({name, time, id, wins, key} : Record<string, st
   `;
 }
 
-export function createCarContainer(list = []) {
+export function createCarContainer(list:Car[] | []=[]) {
   return `
     <div class='tab'>
       <div class='tab__control'>

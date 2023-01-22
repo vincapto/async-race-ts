@@ -1,5 +1,5 @@
-/* eslint-disable import/no-unresolved */
-/* eslint-disable import/extensions */
+import { Car, Winner } from './index';
+
 import { getTimeCar, getRandColor } from './utils';
 
 const server = 'http://localhost:3000';
@@ -68,10 +68,12 @@ export async function deleteWinner(id = 1) {
   await deleteRequest(getWinner(), id);
 }
 
-export function getAllWinners(page = '1', order = 'ASC', sort = 'id', limit = '10') {
-  return getRequest(getWinner(), {
+export async  function getAllWinners(page = '1', order = 'ASC', sort = 'id', limit = '10') {
+  const resp = await getRequest(getWinner(), {
     page: Number(page), order, limit: Number(limit), sort,
   });
+  const {data} = await resp.json() ;
+  return data as {data : Winner[]};
 }
 
 export function getPageWinner(params: {page: string | number, sort:string, order:string}) {
@@ -101,15 +103,20 @@ export function getEngine(request = '') {
 }
 
 export async function getCar(id:string | number = 1) {
-  return getRequest(getGarage(), { id });
+  const resp = await getRequest(getGarage(), { id });
+  const {data}: {data: Car} = await resp.json() ;
+  return data;
 }
 
 export async function getAllCars() {
-  return getRequest(getGarage());
+  const resp = await getRequest(getGarage());
+  const {data}: {data: Car[]} = await resp.json() ;
+  return data;
 }
 
 export async function getPageCar(list: Array<string | number>) {
-  return list.map((a) => getCar(a));
+  const cars = list.map((a) => getCar(a));
+  return cars
 }
 
 export async function addCar(name = 'car A', color = '#ffffff') {
@@ -141,7 +148,9 @@ export async function addRandCarPull(count = 26) {
 
 export async function switchCar(id = 1, mode = true) {
   const status = mode ? 'started' : 'stopped';
-  return updateRequest(getEngine(status), id, { id, status });
+  const update = await updateRequest(getEngine(status), id, { id, status });
+  const data = await update.json();
+  return data;
 }
 
 export async function driveCar(id = 1) {
