@@ -40,15 +40,35 @@ function togglePagination(element: HTMLElement){
 export type Car = { id: string | number; name: string; color: string;};
 export type Winner = { id: string | number; wins: number; time: string;};
 
+const resetCars = () => {
+  const carStop = document.querySelectorAll('.car') as NodeListOf<CarElement>;
+
+  carStop.forEach((car) => {
+    if(car.dataset.condition === 'stop'){
+    car.style.left = `${0}%`;
+    console.log(car.dataset.carId)
+    toggleDisable(car.dataset.carId, true)
+    setAvailable(car.dataset.carId, true)
+    car.style.left = '0px';
+    }
+  })
+}
+
+const getWinnerCount = async () => {
+  let { headers} = await getAllWinners()
+  const result = headers.get('X-Total-Count') as string;
+  return result 
+}
+
 let currentPage = 1;
 let currentPageWinner = 1;
 let  garage  = await getAllCars();
 console.log(garage)
-let {data: dataAllWinnerList} = await getAllWinners()
+let {data: dataAllWinnerList, headers} = await getAllWinners()
 let garageLength = garage.length;
-let winnerLength = dataAllWinnerList.length
+let winnerLength = await getWinnerCount();
 let maxPageCount = getPageCount(garageLength).length;
-let maxPageCountWinner =  checkMaxPage(winnerLength);
+let maxPageCountWinner =  checkMaxPage(+winnerLength);
 
 let raceStart = false;
 let allWinnerList = reduceWinner(dataAllWinnerList) as Winner[]
@@ -73,7 +93,20 @@ const list = await getCarsByPage(1) as Car[];
 console.log('--', list)
 container.innerHTML = createCarContainer(list);
 
+const modal = <HTMLElement>document.querySelector('.modal');
+const modalName = <HTMLElement>document.querySelector('.modal__name');
+const modalTime = <HTMLElement>document.querySelector('.modal__time');
 
+function showNewWinner(name:string, time: string) {
+  modalName.textContent = name;
+  modalTime.textContent = time;
+  modal.classList.remove('modal--hide');
+  setTimeout(() => {
+    modal.classList.add('modal--hide');
+  }, 2000);
+}
+
+const btnReset = <HTMLElement>document.querySelector('.btn-reset');
 const paginationCar = <HTMLElement>document.querySelector('.pagination__list-car');
 const paginationWinner = <HTMLElement>document.querySelector('.pagination__list-winner');
 const garageElementLength = <Element>document.querySelector('.car__length');
@@ -184,16 +217,18 @@ async function setButtonListener(event: Event) {
       if(raceCar.dataset.condition !== 'drive'){
         setAvailable(id, false)
         raceCar.dataset.condition = 'drive';
-        startRace([raceCar]);
         element.disabled = true;
-        const stopAll = document.querySelectorAll(`button[data-id="${id}"]`);
+       
+        const stopAll = document.querySelectorAll(`.car__stop[data-id="${id}"]`);
         const stop = <Btn>stopAll[0];
         console.log(stop)
         stop.disabled = false;
+        await startRace([raceCar]);
       }
+
       console.log(raceCar);
       break;
-      case classList.contains('car__stop'):
+    case classList.contains('car__stop'):
         const carStop = <Btn>document.querySelector(`[data-car-id="${id}"]`);
         if(carStop.dataset.condition !== 'stop'){
           const stopTime = await switchCar(+id, false);
@@ -219,11 +254,17 @@ async function setButtonListener(event: Event) {
       await deleteCar(id);
       id in allWinnerList ?
       await deleteWinner(+id): null
-
+      const length =  await getWinnerCount() as string
+      winnerLength = length;
+      maxPageCountWinner = checkMaxPage(+winnerLength);
       garageElementLength.innerHTML = garageLength.toString();
       garage  = await getAllCars();
       garageLength = garage.length;
+
       const list = await getCarPageList(currentPage, garage);
+
+      
+
       if(list.length !==0){
         carListElement.innerHTML = createCarList(list);
         maxPageCount = getPageCount(garageLength).length
@@ -281,9 +322,6 @@ carTab.addEventListener('click', async (event) => {
 
 btnGenerate.addEventListener('click', async (event) => {
   await addRandCarPull();
-  new Array(20).fill(1).forEach(async(a,key)=>{
-    await createWinner(a+key+1,2,a+key+1)
-  })
    garage  = await getAllCars();
   garageLength = garage.length;
   garageElementLength.innerHTML = garageLength.toString();
@@ -295,13 +333,15 @@ btnGenerate.addEventListener('click', async (event) => {
 btnAdd.addEventListener('click', async () => {
   const carName = <HTMLInputElement>document.querySelector('.input-add__text');
   const carColor = <HTMLInputElement>document.querySelector('.input-add__color');
-  await addCar(carName.value, carColor.value);
-  garage  = await getAllCars();
-  garageLength = garage.length;
-  garageElementLength.innerHTML = garageLength.toString();
-  const list = await getCarPageList(currentPage, garage);
-  carListElement.innerHTML = createCarList(list);
-  maxPageCount= getPageCount(garageLength).length
+  if(carName.value.length!==0){
+    await addCar(carName.value, carColor.value);
+    garage  = await getAllCars();
+    garageLength = garage.length;
+    garageElementLength.innerHTML = garageLength.toString();
+    const list = await getCarPageList(currentPage, garage);
+    carListElement.innerHTML = createCarList(list);
+    maxPageCount= getPageCount(garageLength).length
+  }
 });
 
 btnRace.addEventListener('click', async (event) => {
@@ -340,20 +380,8 @@ async function startRace(carElement: CarElement[]) {
   const promiseRace = carTimeList.map((a) => {
     return moveCar(a);
   });
-  const settled = await Promise.allSettled(promiseRace);
-//   settled.forEach(a=>{
-//     console.log(a.value);
-//   })
-  // const winner = settled
-  //   .filter((a) => {
-  //     return a.value !== undefined;
-  //   })
-  //   .sort((a, b) => {
-  //     return b.value.time - a.value.time;
-  //   })
-  //   .pop();
-  // const value = winner?.value ?? { name: null, time: null };
-  // saveWinner(value);
+  const settled = await Promise.allSettled(promiseRace)
+
 }
 
 function toggleDisable(id: string, isStart: boolean) {
@@ -396,7 +424,7 @@ function disableRace(isEnd: boolean) {
     console.log('=====================End')
     btnGenerate.disabled = false;
     btnRace.disabled = false;
-    // addCar.disabled = false;
+    btnAdd.disabled = false;
     btnUpdate.disabled = false;
     winnerTab.disabled = false;
     carTab.disabled = false;
@@ -441,20 +469,24 @@ function moveCar({ car, time, id, name }: CarTime) {
       car.dataset.condition = 'stop'
       clearAnimationTimeout()
       disableRace(checkRaceEnd())
-      if(raceStart){
-        raceStart = false;
-        updateAllWinnerList(+id, time.toString())?
-          await updateWinner( id,(allWinnerList[+id].wins+1).toString(), time.toString()) : 
+        if(raceStart){
+          raceStart = false;
+          console.log('SAVW', name, id, time)
+          updateAllWinnerList(+id, time.toString())?
+          await updateWinner( id,(+allWinnerList[+id].wins+1).toString(), time.toString()) : 
           await saveWinner( +id,1, +time)
-      }
+
+          showNewWinner(name,(time/1000).toFixed(2).toString())
+        }
     } else if(car.dataset.condition ==='stop'){
-      cancelAnimationFrame(frameId);
-      car.dataset.condition = 'stop'
-      clearAnimationTimeout();
-      car.style.left = `${0}%`;
-      disableRace(checkRaceEnd())
-      setAvailable(id, true)
-    }
+        
+          cancelAnimationFrame(frameId);
+          car.dataset.condition = 'stop'
+          clearAnimationTimeout();
+          car.style.left = `${0}%`;
+          disableRace(checkRaceEnd())
+          setAvailable(id, true)
+      }
     else frameId = requestAnimationFrame(animate);
   }
 
@@ -470,7 +502,16 @@ function moveCar({ car, time, id, name }: CarTime) {
 
   frameId = requestAnimationFrame(animate);
 
-  return driveCar(+id)
+  const stopCar = () => {
+      cancelAnimationFrame(frameId);
+          car.dataset.condition = 'stop'
+          clearAnimationTimeout();
+          // car.style.left = `${0}%`;
+          disableRace(checkRaceEnd())
+          // setAvailable(id, true)
+  };
+
+  return driveCar(+id, stopCar)
     .then((a) => {
       console.log('THEN',a);
       // car.dataset.condition = 'stop'
@@ -478,6 +519,7 @@ function moveCar({ car, time, id, name }: CarTime) {
     })
     .catch((err) => {
       clearFrame()
+      console.log('STOP');
       car.dataset.condition = 'stop'
       // toggleDisable(id, true)
     });
@@ -492,6 +534,7 @@ console.log(btnBackWinner)
 
 btnForwardWinner.addEventListener('click', async (event) => {
   const movePage = currentPageWinner + 1 <=  maxPageCountWinner? currentPageWinner +1 : maxPageCountWinner;
+  console.log(currentPageWinner, movePage, maxPageCountWinner)
   if(movePage !== currentPageWinner){
     currentPageWinner = movePage;
     winnerPage.textContent = currentPageWinner.toString();
@@ -532,3 +575,7 @@ btnBack.addEventListener('click', async (event) => {
     carListElement.innerHTML = createCarList(list);
   }
 });
+
+btnReset.addEventListener('click', async (event) => {
+  resetCars();
+})

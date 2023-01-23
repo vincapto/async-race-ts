@@ -21,6 +21,16 @@ function SVGCar(color: string) {
   `
 }
 
+function createModal() {
+  return `
+  <div class='modal modal--hide'>
+    <div>Car: <span class='modal__name'></span></div>
+    <div>Time: <span class='modal__time'></span></div>
+  </div>
+  `
+  
+}
+
 export function createCar({ name, color, id } : Car) {
     console.log(name, color, id)
 
@@ -38,7 +48,6 @@ export function createCar({ name, color, id } : Car) {
       <div class='car' data-condition='ready' data-name=${name} data-model=${''} data-color=${color} data-car-id=${id}>
       <div class='car__name'>${name}</div>
       ${SVGCar(color)}
-        <div class='car__icon' style='background-color:${color}'>${id}</div>
       </div>
     </div>
     <div class='car__finish'></div>
@@ -55,7 +64,7 @@ export function createWinnerList(list: Array<Record<string, string|number>>) {
     .join(''):'';
 }
 
-export function createWinnerItem({name, time, id, wins, key} : Record<string, string | number>) {
+export function createWinnerItem({name, time, id, color, key, wins} : Record<string, string | number>) {
   return `
     <div class='winner__item'>
       <div class='winner__key'>
@@ -63,6 +72,9 @@ export function createWinnerItem({name, time, id, wins, key} : Record<string, st
       </div>
       <div class='winner__name'>
         Name: ${name}
+      </div>
+      <div class='winner__icon'>
+        ${SVGCar(color as string)}
       </div>
       <div class='winner__time'>
         Time: ${time}
@@ -104,6 +116,7 @@ export function createCarContainer(list:Car[] | []=[]) {
         
       </div>
       <div class='car__container '>
+        ${createModal()}
         <div class='car__length-wrapper'>
           <span>Count:</span><div class='car__length'>0</div>
         </div>
@@ -124,6 +137,7 @@ export function createCarContainer(list:Car[] | []=[]) {
           <div class='car__update'></div>
           <button class='btn btn-generate'>Generate Cars</button>
           <button class='btn btn-race'>Race</button>
+          <button class='btn btn-reset'>Reset</button>
         </div>
           <ul class='car__list'>
             ${createCarList(list)}

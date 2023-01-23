@@ -113,10 +113,40 @@ body {
         display: inline-flex;
         gap: 5px;
     }
+
+    &__icon svg {
+        display: block;
+        position: relative;
+        top: -15px;
+        width: 50px;
+        height: 50px;
+    }
+}
+
+.modal {
+    position: fixed;
+    gap: 10px;
+    width: 250px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    border: 2px solid black;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+
+    &--hide {
+        display: none;
+    }
 }
 
 .car {
     position: relative;
+    width: fit-content;
 
     &__container {}
 

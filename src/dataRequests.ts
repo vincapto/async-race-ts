@@ -20,15 +20,22 @@ export async function getRequest(url: string, params?: Record<string, string | n
 
 
 
-export async function patchRequest(url: string, params?: Record<string, string | number | boolean>) {
-  console.log(params)
-  return fetch(
-    `${url}?id=${params?.id}&status=${params?.status}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify({id: 5, status: 'started'}),
-    },
-  );
+export function patchRequest(
+  url: string, params?: Record<string, string | number | boolean>, 
+  fn?:()=>void) {
+    console.log(params)
+    return fetch(
+      `${url}?id=${params?.id}&status=${params?.status}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({id: 5, status: 'started'}),
+      },
+    ).finally(() => {
+        if (fn) {
+          fn()
+        }
+        console.log('end', fn)
+  });
 }
 
 export async function getRequestById(url: string, id: string | number) {
@@ -190,7 +197,7 @@ export async function addRandCar() {
   await addCar(getTimeCar(), getRandColor());
 }
 
-export async function addRandCarPull(count = 26) {
+export async function addRandCarPull(count = 100) {
     for (let i = 0; i < count; i++) {
         await addCar(getTimeCar(), getRandColor())
     }
@@ -201,11 +208,11 @@ export async function switchCar(id = 1, mode = true) {
   console.log(id, status)
   const update = await patchRequest(getEngine(), { id, status });
   const data = await update.json();
-  console.log(data)
+  console.log('-----DARAz',data)
   return data;
 }
 
-export async function driveCar(id = 1) {
+export function driveCar(id = 1, fn?:()=>void) {
   const status = 'drive';
-  return patchRequest(getEngine() , {id,  status });
+  return patchRequest(getEngine() , {id,  status }, fn);
 }
